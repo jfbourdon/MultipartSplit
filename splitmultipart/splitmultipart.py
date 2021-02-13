@@ -123,31 +123,32 @@ class SplitMultipart(object):
             # if feature geometry is multipart starts split processing
             if geom != None:
                 if geom.isMultipart():
-                    n_split_feats += 1
-
                     parts = geom.asGeometryCollection()
 
-                    # Convert part to multiType to prevent errors in Spatialite
-                    for part in parts:
-                        part.convertToMultiType()
+                    # Check if feature really contains multiple parts
+                    if len(parts) > 1:
+                        n_split_feats += 1
+                            
+                            # Convert part to multiType to prevent errors in Spatialite
+                            for part in parts:
+                                part.convertToMultiType()
 
-                    #Convert list of attributes to dict
+                            #Convert list of attributes to dict
+                            attributes = {i: v for i, v in enumerate(
+                                feature.attributes())}
 
-                    attributes = {i: v for i, v in enumerate(
-                        feature.attributes())}
-
-                    # from 2nd to last part create a new features using their
-                    # single geometry and the attributes of the original feature
-                    for i in range(1,len(parts)):
-                        n_new_feats += 1
-                        new_feat = QgsVectorLayerUtils.createFeature(layer,
-                                                                     parts[i],
-                                                                     attributes)
-                        layer.addFeature(new_feat)
-                    # update feature geometry to hold first part of geometry
-                    # (this way one of the output features keeps the original Id)
-                    feature.setGeometry(parts[0])
-                    layer.updateFeature(feature)
+                            # from 2nd to last part create a new features using their
+                            # single geometry and the attributes of the original feature
+                            for i in range(1,len(parts)):
+                                n_new_feats += 1
+                                new_feat = QgsVectorLayerUtils.createFeature(layer,
+                                                                             parts[i],
+                                                                             attributes)
+                                layer.addFeature(new_feat)
+                            # update feature geometry to hold first part of geometry
+                            # (this way one of the output features keeps the original Id)
+                            feature.setGeometry(parts[0])
+                            layer.updateFeature(feature)
 
         # End process and inform user about the results
         if n_new_feats > 0:
